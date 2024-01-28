@@ -11,28 +11,62 @@ const port = process.env.PORT || 3000;
 
 const PROPERTY_SERVICE_URL = process.env.PROPERTY_SERVICE_URL || 'http://localhost:3001';
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:3002';
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3003';
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Mock user database
-const users = {
-  'user1': { password: 'password1', role: 'admin' },
-  'user2': { password: 'password2', role: 'user' }
-};
-
-// Generate JWT Token
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (users[username] && users[username].password === password) {
-    const token = jwt.sign({ username, role: users[username].role }, process.env.TOKEN_KEY, { expiresIn: '24h' });
-    return res.json({ token });
-  }
-  return res.status(401).send('Invalid Credentials');
+// Route for registering a new user
+app.post('/api/users', async (req, res) => {
+    try {
+        const response = await axios.post(`${USER_SERVICE_URL}/users`, req.body);
+        res.status(201).json(response.data);
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
 });
 
-// Secured route example
+// Route for user login
+app.post('/api/users/login', async (req, res) => {
+    try {
+        const response = await axios.post(`${USER_SERVICE_URL}/users/login`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
+});
+
+// Route for retrieving a user profile
+app.get('/api/users/:id', verifyToken, async (req, res) => {
+    try {
+        const response = await axios.get(`${USER_SERVICE_URL}/users/${req.params.id}`);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
+});
+
+// Route for updating a user profile
+app.put('/api/users/:id', verifyToken, async (req, res) => {
+    try {
+        const response = await axios.put(`${USER_SERVICE_URL}/users/${req.params.id}`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
+});
+
+// Route for deleting a user
+app.delete('/api/users/:id', verifyToken, async (req, res) => {
+    try {
+        await axios.delete(`${USER_SERVICE_URL}/users/${req.params.id}`);
+        res.status(204).send();
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
+});
+
 app.get('/api/properties', verifyToken, async (req, res) => {
   try {
       const response = await axios.get(`${PROPERTY_SERVICE_URL}/properties`);
