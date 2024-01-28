@@ -11,6 +11,11 @@ const port = process.env.SERVICE_PORT || 3003;
 mongoose.connect(process.env.MONGODB_URI);
 
 app.use(express.json());
+app.use((req, res, next) => {
+    console.log(`Request received on instance at port ${process.env.SERVICE_PORT}`);
+    next();
+});
+
 
 // POST route for creating a new user
 app.post('/users', async (req, res) => {

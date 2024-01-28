@@ -11,6 +11,11 @@ mongoose.connect(process.env.MONGODB_URI)
 .catch(err => console.error(err));
 
 app.use(express.json());
+app.use((req, res, next) => {
+    console.log(`Request received on instance at port ${process.env.SERVICE_PORT}`);
+    next();
+});
+
 
 // POST endpoint to create a new booking
 app.post('/bookings', async (req, res) => {

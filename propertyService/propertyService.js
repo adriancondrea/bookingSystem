@@ -5,6 +5,11 @@ const Property = require('./models/Property'); // Ensure this model file is crea
 const app = express();
 const port = process.env.SERVICE_PORT|| 3001;
 app.use(express.json());
+app.use((req, res, next) => {
+    console.log(`Request received on instance at port ${process.env.SERVICE_PORT}`);
+    next();
+});
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
