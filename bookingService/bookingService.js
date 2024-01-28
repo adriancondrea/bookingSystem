@@ -1,6 +1,7 @@
 require('dotenv').config({path: __dirname + '/.env'});
 const express = require('express');
 const mongoose = require('mongoose');
+const amqp = require('amqplib');
 const Booking = require('./models/Booking'); // Ensure this model file is created
 const app = express();
 const port = process.env.SERVICE_PORT || 3002;
@@ -16,6 +17,7 @@ app.use((req, res, next) => {
     next();
 });
 
+startBookingListener();
 
 // POST endpoint to create a new booking
 app.post('/bookings', async (req, res) => {
@@ -67,5 +69,61 @@ app.delete('/bookings/:id', async (req, res) => {
 app.listen(port, () => {
     console.log(`Booking Service listening at http://localhost:${port}`);
 });
+
+async function startBookingListener() {
+    const connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+    const exchange = 'property_updates';
+
+    await channel.assertExchange(exchange, 'fanout', { durable: false });
+    const q = await channel.assertQueue('', { exclusive: true });
+
+    console.log("Waiting for property updates");
+    channel.bindQueue(q.queue, exchange, '');
+
+    channel.consume(q.queue, async function (msg) {
+        if (msg.content) {
+            console.log("Received property update:", msg.content.toString());
+            const propertyUpdate = JSON.parse(msg.content.toString());
+            try {
+                // Process the property update
+                await updateBookingsForProperty(propertyUpdate);
+
+                console.log("Processed property update successfully.");
+            } catch (error) {
+                console.error("Error processing property update:", error);
+            }
+        }
+    }, { noAck: true });
+}
+
+/**
+ * Updates bookings for a property based on property updates.
+ * @param {Object} propertyUpdate - Object containing details about the property update.
+ */
+async function updateBookingsForProperty(propertyUpdate) {
+    // Example propertyUpdate structure:
+    // { propertyId: '123', newAvailability: { startDate: '2021-01-01', endDate: '2021-01-10' }, ... }
+
+    try {
+        // Fetch affected bookings
+        const affectedBookings = await Booking.find({
+            propertyId: propertyUpdate.propertyId,
+        });
+
+        // Update each affected booking
+        for (const booking of affectedBookings) {
+            // Logic to update booking based on the property update
+            // Here, we're simply marking the booking as needing review
+            booking.status = 'Review Needed';
+            await booking.save();
+        }
+
+        console.log(`Updated ${affectedBookings.length} bookings for property ${propertyUpdate.propertyId}`);
+    } catch (error) {
+        console.error('Error updating bookings:', error);
+        throw error; // Re-throw the error for the caller to handle
+    }
+}
 
 module.exports = app;

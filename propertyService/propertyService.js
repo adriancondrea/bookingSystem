@@ -1,6 +1,7 @@
 require('dotenv').config({path: __dirname + '/.env'});
 const express = require('express');
 const mongoose = require('mongoose');
+const amqp = require('amqplib');
 const Property = require('./models/Property'); // Ensure this model file is created
 const app = express();
 const port = process.env.SERVICE_PORT|| 3001;
@@ -39,8 +40,41 @@ app.post('/properties', async (req, res) => {
     }
 });
 
+// PUT endpoint to update property details
+app.put('/properties/:id', async (req, res) => {
+    try {
+        const propertyId = req.params.id;
+        const updates = req.body;
+
+        const updatedProperty = await Property.findByIdAndUpdate(propertyId, updates, { new: true });
+        if (!updatedProperty) {
+            return res.status(404).send('Property not found');
+        }
+
+        // Publish update to RabbitMQ
+        await publishPropertyUpdate({ propertyId, ...updates });
+
+        res.json(updatedProperty);
+    } catch (error) {
+        console.error('Error updating property:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 app.listen(port, () => {
 console.log(`Property Service listening at http://localhost:${port}`);
 });
+
+async function publishPropertyUpdate(propertyDetails) {
+    const connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+    const exchange = 'property_updates';
+
+    await channel.assertExchange(exchange, 'fanout', { durable: false });
+    channel.publish(exchange, '', Buffer.from(JSON.stringify(propertyDetails)));
+
+    console.log("Published property update");
+    setTimeout(function() { connection.close(); }, 500);
+}
 
 module.exports = app;

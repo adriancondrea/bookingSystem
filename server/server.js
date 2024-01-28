@@ -85,6 +85,15 @@ app.post('/api/properties', verifyToken, async (req, res) => {
     }
 });
 
+app.put('/api/properties/:id', verifyToken, async (req, res) => {
+    try {
+        const response = await axios.put(`${PROPERTY_SERVICE_URL}/properties/${req.params.id}`, req.body);
+        res.status(201).json(response.data);
+    } catch (error) {
+        res.status(error.response.status).send(error.response.data);
+    }
+});
+
 // Route to create a new booking
 app.post('/api/bookings', verifyToken, async (req, res) => {
     try {
