@@ -14,7 +14,9 @@ const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3003';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3010'  // Specify the origin of the frontend app
+}));
 app.use(bodyParser.json());
 
 // Route for registering a new user
@@ -92,6 +94,17 @@ app.put('/api/properties/:id', verifyToken, async (req, res) => {
     } catch (error) {
         res.status(error.response.status).send(error.response.data);
     }
+});
+
+app.delete('/api/properties/:id', verifyToken, async (req, res) => {
+   try {
+       console.log("deleting property with id ", req.params.id);
+       const response = await axios.delete(`${PROPERTY_SERVICE_URL}/properties/${req.params.id}`);
+         res.status(204).send();
+   }
+   catch (error) {
+       res.status(error.response.status).send(error.response.data);
+   }
 });
 
 // Route to create a new booking

@@ -61,6 +61,19 @@ app.put('/properties/:id', async (req, res) => {
     }
 });
 
+app.delete('/properties/:id', async (req, res) => {
+    try {
+    const propertyId = req.params.id;
+    const deletedProperty = await Property.findByIdAndDelete(propertyId);
+    if (!deletedProperty) {
+    return res.status(404).send('Property not found');
+    }
+    res.status(204).send();
+    } catch (error) {
+    res.status(500).send(error.message);
+    }
+});
+
 app.listen(port, () => {
 console.log(`Property Service listening at http://localhost:${port}`);
 });
