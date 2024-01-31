@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('./models/User'); // Ensure this model is created
+const User = require('./models/User');
+const { startKafkaConsumer, consumer } = require('./kafkaConsumer');
+
 require('dotenv').config();
 
 const app = express();
@@ -16,6 +18,13 @@ app.use((req, res, next) => {
     next();
 });
 
+// Start Kafka Consumer
+startKafkaConsumer().then(consumer => {
+    console.log("Kafka Consumer started successfully.");
+    // You can also handle consumer events or errors here
+}).catch(err => {
+    console.error("Failed to start Kafka Consumer:", err);
+});
 
 // POST route for creating a new user
 app.post('/users', async (req, res) => {
@@ -88,6 +97,32 @@ app.delete('/users/:id', async (req, res) => {
   }
 });
 
+const gracefulShutdown = async () => {
+    console.log("Shutting down gracefully...");
+
+    // Stop the server from accepting new connections
+    server.close(async (err) => {
+        if (err) {
+            console.error("Error occurred during server shutdown:", err);
+            process.exit(1);
+        }
+
+        // Disconnect the Kafka consumer
+        try {
+            await consumer.disconnect();
+            console.log("Kafka Consumer disconnected successfully.");
+        } catch (error) {
+            console.error("Failed to disconnect Kafka Consumer:", error);
+        }
+
+        console.log("All services stopped, exiting now.");
+        process.exit(0);
+    });
+};
+
+// Handle termination signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 app.listen(port, () => {
   console.log(`User Management Service listening at http://localhost:${port}`);

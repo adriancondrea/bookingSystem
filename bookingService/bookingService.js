@@ -2,6 +2,7 @@ require('dotenv').config({path: __dirname + '/.env'});
 const express = require('express');
 const mongoose = require('mongoose');
 const amqp = require('amqplib');
+const { Kafka, Partitioners} = require('kafkajs');
 const Booking = require('./models/Booking'); // Ensure this model file is created
 const app = express();
 const port = process.env.SERVICE_PORT || 3002;
@@ -19,11 +20,23 @@ app.use((req, res, next) => {
 
 startBookingListener();
 
+const kafka = new Kafka({ brokers: ['localhost:9092'] });
+const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner });
+producer.connect();
+
+
 // POST endpoint to create a new booking
 app.post('/bookings', async (req, res) => {
     try {
         const newBooking = new Booking(req.body);
         const savedBooking = await newBooking.save();
+
+        // Publish a message after successful booking creation
+        await producer.send({
+            topic: 'booking_events',
+            messages: [{ value: JSON.stringify({ event: 'BookingCreated', data: savedBooking }) }],
+        });
+
         res.status(201).json(savedBooking);
     } catch (error) {
         res.status(400).send(error.message);
@@ -47,6 +60,11 @@ app.put('/bookings/:id', async (req, res) => {
         if (!updatedBooking) {
             return res.status(404).send('Booking not found');
         }
+        // Publish a message after successful booking update
+        await producer.send({
+            topic: 'booking_events',
+            messages: [{ value: JSON.stringify({ event: 'BookingUpdated', data: updatedBooking }) }],
+        });
         res.json(updatedBooking);
     } catch (error) {
         res.status(400).send(error.message);
@@ -60,6 +78,11 @@ app.delete('/bookings/:id', async (req, res) => {
         if (!deletedBooking) {
             return res.status(404).send('Booking not found');
         }
+        // Publish a message after successful booking deletion
+        await producer.send({
+            topic: 'booking_events',
+            messages: [{ value: JSON.stringify({ event: 'BookingCancelled', data: deletedBooking }) }],
+        });
         res.status(204).send();
     } catch (error) {
         res.status(500).send(error.message);
@@ -125,5 +148,32 @@ async function updateBookingsForProperty(propertyUpdate) {
         throw error; // Re-throw the error for the caller to handle
     }
 }
+
+// Function to handle graceful shutdown
+function gracefulShutdown() {
+    console.log("Shutting down gracefully...");
+
+    // Stop the HTTP server
+    server.close(async (err) => {
+        if (err) {
+            console.error("Error occurred during server shutdown:", err);
+            process.exit(1);
+        }
+
+        // Disconnect the Kafka producer
+        try {
+            await producer.disconnect();
+        } catch (error) {
+            console.error("Error occurred while disconnecting Kafka producer:", error);
+        }
+
+        console.log("All services stopped, exiting now.");
+        process.exit(0);
+    });
+}
+
+// Listen for termination signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 module.exports = app;
