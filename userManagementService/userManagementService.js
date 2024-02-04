@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const { startKafkaConsumer, consumer } = require('./kafkaConsumer');
+const {sendWelcomeEmail} = require("./functions");
 
 require('dotenv').config();
 
@@ -43,6 +44,7 @@ app.post('/users', async (req, res) => {
         // Save the user to the database
         const savedUser = await user.save();
 
+        sendWelcomeEmail(savedUser.email, savedUser.username);
         // Respond with the created user (excluding the password)
         res.status(201).json({ username: savedUser.username, email: savedUser.email, id: savedUser._id });
     } catch (error) {
