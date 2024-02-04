@@ -1,0 +1,22 @@
+@startuml UserManagementServiceComponent
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title User Management Service Components
+
+Container(svc, "User Management Service", "Node.js", "Handles user information and authentication")
+
+ComponentDb(db, "User Database", "MongoDB", "Stores user credentials and profiles")
+
+Component(kafkaListener, "Kafka Listener", "Node.js", "Listens for booking changes to update user data")
+Component(authManager, "Authentication Manager", "Node.js", "Manages user login and authentication")
+Component(userProfileManager, "User Profile Manager", "Node.js", "Manages user profiles")
+
+Rel(svc, kafkaListener, "Uses")
+Rel(svc, authManager, "Uses")
+Rel(kafkaListener, userProfileManager, "Uses")
+Rel(svc, userProfileManager, "Uses")
+Rel(userProfileManager, db, "Reads/Writes to")
+
+@enduml

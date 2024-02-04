@@ -1,0 +1,21 @@
+@startuml BookingSystemContext
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context diagram for Booking System
+
+Person(user, "User", "A user of the booking system, can be a guest or property owner.")
+Person(admin, "Administrator", "Administers the system's operational aspects.")
+System(bookingSystem, "Booking System", "Allows users to book properties and manage listings.")
+
+System_Ext(emailSystem, "Email System", "Sends booking and user notifications.")
+System_Ext(paymentGateway, "Payment Gateway", "Handles payment transactions.")
+
+Rel(user, bookingSystem, "Uses")
+Rel(admin, bookingSystem, "Administers")
+Rel(bookingSystem, emailSystem, "Sends notifications through")
+Rel(bookingSystem, paymentGateway, "Processes payments via")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,19 @@
+@startuml PropertyServiceComponent
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Property Service Components
+
+Container(svc, "Property Service", "Node.js", "Manages property listings")
+
+ComponentDb(db, "Property Database", "MongoDB", "Stores property details")
+
+Component(rabbitPublisher, "RabbitMQ Publisher", "Node.js", "Publishes property update events")
+Component(propertyManager, "Property Manager", "Node.js", "Handles property listing and updates")
+
+Rel(svc, rabbitPublisher, "Uses")
+Rel(svc, propertyManager, "Uses")
+Rel(propertyManager, db, "Reads/Writes to")
+
+@enduml

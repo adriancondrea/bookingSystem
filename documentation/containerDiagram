@@ -1,0 +1,24 @@
+@startuml BookingSystemContainer
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container diagram for Booking System
+
+Person(user, "User", "A user of the booking system, can be a guest or property owner.")
+Container(webApp, "Web Application", "JavaScript, React", "Allows users to interact with the booking system.")
+Container(bookingApi, "Booking API", "Node.js, Express", "Handles all application logic, including authentication, booking, and property management.")
+ContainerDb(database, "Database", "Mongodb", "Stores user, booking, and property information.")
+Container(queue, "Message Queue", "RabbitMQ", "Decouples service communication for property updates.")
+Container(messageBroker, "Message Broker", "Kafka", "Handles asynchronous communication between services.")
+
+Rel(user, webApp, "Uses", "HTTPS")
+Rel(webApp, bookingApi, "Communicates with", "HTTP/JSON")
+Rel(bookingApi, database, "Reads/Writes to", "JDBC")
+Rel(bookingApi, queue, "Publishes property updates on")
+Rel(bookingApi, messageBroker, "Publishes booking updates on")
+Rel_Back(queue, bookingApi, "Sends property updates to")
+Rel_Back(messageBroker, bookingApi, "Sends booking updates to")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,40 @@
+@startuml BookingSystemComponentDiagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' System Boundary
+System_Boundary(s1, "Booking System") {
+    ' Microservices
+    Container(bookingService, "Booking Service", "Node.js", "Manages and updates bookings.")
+    Container(userService, "User Management Service", "Node.js", "Handles user information and authentication.")
+    Container(propertyService, "Property Service", "Node.js", "Manages property listings.")
+
+    ' Databases
+    ContainerDb(bookingDb, "Booking Database", "Stores booking details and statuses.")
+    ContainerDb(userDb, "User Database", "Stores user profiles and credentials.")
+    ContainerDb(propertyDb, "Property Database", "Stores property details and availability.")
+
+    ' Messaging
+    Container(queue, "RabbitMQ/Kafka", "Message broker for service communication.")
+}
+
+' Server
+Container(server, "Server", "Nginx", "Routes requests to the appropriate service.")
+
+' External Interfaces
+Container(frontEnd, "Frontend Application", "React", "Provides user interface for booking and managing properties.")
+
+' Relationships
+Rel(frontEnd, server, "Routes requests through")
+Rel(server, bookingService, "Routes booking requests")
+Rel(server, userService, "Routes user requests")
+Rel(server, propertyService, "Routes property requests")
+Rel_L(bookingService, bookingDb, "Reads from and writes to")
+Rel_L(userService, userDb, "Reads from and writes to")
+Rel_L(propertyService, propertyDb, "Reads from and writes to")
+Rel_R(bookingService, queue, "Publishes booking updates", "Kafka")
+Rel_R(userService, queue, "Consumes booking updates; Publishes user actions", "Kafka/RabbitMQ")
+Rel_R(propertyService, queue, "Publishes property updates", "RabbitMQ")
+Rel(queue, bookingService, "Sends property update notifications", "RabbitMQ")
+Rel(queue, userService, "Sends user notifications", "Kafka")
+
+@enduml

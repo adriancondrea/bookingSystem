@@ -1,0 +1,18 @@
+@startuml ServerComponent
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title API Gateway Components
+
+Container(svc, "API Gateway", "NGINX/Node.js", "Routes requests to appropriate services")
+
+Component(userSvc, "User Service", "", "Handles user operations")
+Component(bookingSvc, "Booking Service", "", "Manages bookings")
+Component(propertySvc, "Property Service", "", "Manages properties")
+
+Rel(svc, userSvc, "Routes to")
+Rel(svc, bookingSvc, "Routes to")
+Rel(svc, propertySvc, "Routes to")
+
+@enduml

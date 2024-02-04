@@ -1,0 +1,22 @@
+@startuml BookingServiceComponent
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Booking Service Components
+
+Container(svc, "Booking Service", "Node.js", "Manages booking operations")
+
+ComponentDb(db, "Booking Database", "MongoDB", "Stores booking and reservation data")
+
+Component(rabbitListener, "RabbitMQ Listener", "Node.js", "Listens for property update events")
+Component(kafkaPublisher, "Kafka Publisher", "Node.js", "Publishes booking status updates")
+Component(bookingManager, "Booking Manager", "Node.js", "Handles business logic for booking management")
+
+Rel(svc, rabbitListener, "Uses")
+Rel(svc, kafkaPublisher, "Uses")
+Rel(svc, bookingManager, "Uses")
+Rel(rabbitListener, bookingManager, "Uses")
+Rel(bookingManager, db, "Reads/Writes to")
+
+@enduml
