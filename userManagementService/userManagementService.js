@@ -43,6 +43,8 @@ app.post('/users', async (req, res) => {
 
         // Save the user to the database
         const savedUser = await user.save();
+        // sending welcome email when function is deployed to firebase shall be done using the following line:
+        // await axios.post('https://us-central1-your-project-id.cloudfunctions.net/sendWelcomeMail', { email: savedUser.email, name: savedUser.username });
 
         sendWelcomeEmail(savedUser.email, savedUser.username);
         // Respond with the created user (excluding the password)
